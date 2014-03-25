@@ -53,7 +53,7 @@ EXTRA_DIST = \
 	virsh-network.c virsh-nodedev.c			\
 	virsh-nwfilter.c virsh-pool.c			\
 	virsh-secret.c virsh-snapshot.c			\
-	virsh-volume.c
+	virsh-volume.c virsh-completer.c
 
 
 
@@ -191,6 +191,7 @@ virsh_SOURCES =							\
 		virsh-secret.c virsh-secret.h			\
 		virsh-snapshot.c virsh-snapshot.h		\
 		virsh-volume.c virsh-volume.h			\
+		virsh-completer.c virsh-completer.h		\
 		$(NULL)
 
 virsh_LDFLAGS = \

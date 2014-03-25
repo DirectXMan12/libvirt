@@ -85,6 +85,7 @@
 #include "virsh-secret.h"
 #include "virsh-snapshot.h"
 #include "virsh-volume.h"
+#include "virsh-completer.h"
 
 /* Gnulib doesn't guarantee SA_SIGINFO support.  */
 #ifndef SA_SIGINFO
@@ -138,6 +139,19 @@ _vshStrdup(vshControl *ctl, const char *s, const char *filename, int line)
 
 /* Poison the raw allocating identifiers in favor of our vsh variants.  */
 #define strdup use_vshStrdup_instead_of_strdup
+
+char *_vshStrncpy(vshControl *ctl, char *dest, const char *src, size_t n,
+                  size_t destsize, const char *filename, int line)
+{
+    char *res = virStrncpy(dest, src, n, destsize);
+
+    if (res)
+        return res;
+
+    vshError(ctl, _("%s: %d: failed to strncpy %zu characters"),
+             filename, line, n);
+    exit(EXIT_FAILURE);
+}
 
 int
 vshNameSorter(const void *a, const void *b)
@@ -916,6 +930,9 @@ static const vshCmdInfo info_echo[] = {
     {.name = NULL}
 };
 
+/* say hello in English, French, Hebrew, and Shell ;-) */
+VSH_STRING_COMPLETER(NULL, EchoString, "hello", "bonjour", "shalom", "#!");
+
 static const vshCmdOptDef opts_echo[] = {
     {.name = "shell",
      .type = VSH_OT_BOOL,
@@ -935,6 +952,7 @@ static const vshCmdOptDef opts_echo[] = {
     },
     {.name = "string",
      .type = VSH_OT_ARGV,
+     .completer = vshCompleteEchoString,
      .help = N_("arguments to echo")
     },
     {.name = NULL}
@@ -994,6 +1012,80 @@ cmdEcho(vshControl *ctl, const vshCmd *cmd)
     if (arg)
         vshPrint(ctl, "%s", arg);
     VIR_FREE(arg);
+    return true;
+}
+
+/*
+ * "fake-command" command
+ */
+static const vshCmdInfo info_fake_command[] = {
+    {.name = "help",
+     .data = N_("a fake, no-op command")
+    },
+    {.name = "desc",
+     .data = N_("Do absolutely nothing! Used for testing completion")
+    },
+    {.name = NULL}
+};
+
+VSH_STRING_COMPLETER(NULL, FakeCommandStr1, "value1", "value2");
+VSH_STRING_COMPLETER(NULL, FakeCommandStr2, "value a", "value b");
+VSH_STRING_COMPLETER(NULL, FakeCommandData1, "ab", "cd");
+VSH_STRING_COMPLETER(NULL, FakeCommandData2, "i e f", "i g h");
+
+static const vshCmdOptDef opts_fake_command[] = {
+    {.name = "abool",
+     .type = VSH_OT_BOOL,
+     .help = N_("a boolean flag")
+    },
+    {.name = "data1",
+     .type = VSH_OT_DATA,
+     .completer = vshCompleteFakeCommandData1,
+     .help = N_("some data")
+    },
+    {.name = "data2",
+     .type = VSH_OT_DATA,
+     .completer = vshCompleteFakeCommandData2,
+     .help = N_("some more data")
+    },
+    {.name = "string1",
+     .type = VSH_OT_STRING,
+     .completer = vshCompleteFakeCommandStr1,
+     .help = N_("a string")
+    },
+    {.name = "string2",
+     .type = VSH_OT_STRING,
+     .completer = vshCompleteFakeCommandStr2,
+     .help = N_("another string")
+    },
+    {.name = "string3",
+     .type = VSH_OT_STRING,
+     .help = N_("another string")
+    },
+    {.name = "file",
+     .type = VSH_OT_STRING,
+     .completer_flags = VSH_COMPLETE_AS_FILE,
+     .help = N_("a string")
+    },
+    {.name = NULL}
+};
+
+/* Used for testing completion
+ */
+static bool
+cmdFakeCommand(vshControl *ctl ATTRIBUTE_UNUSED,
+               const vshCmd *cmd ATTRIBUTE_UNUSED)
+{
+    vshCmdOpt *opt = cmd->opts;
+    if (opt) {
+        do {
+            if (opt->data)
+                vshPrint(NULL, "%s: %s\n", opt->def->name, opt->data);
+            else
+                vshPrint(NULL, "%s: true\n", opt->def->name);
+        } while ((opt = opt->next));
+    }
+
     return true;
 }
 
@@ -1931,7 +2023,9 @@ vshExtractLinePart(vshControl *ctl, vshCommandParser *parser,
 
     if (tok_type == VSH_TK_ERROR) {
         ret = VSH_LINE_STATE_TOK_ERR;
-        *opt = NULL;
+        *tok_out = vshStrdup(ctl, tok);
+        /* attempt to determine the option anyway... */
+        *opt = vshCmddefGetData(*cmd, opts_need_arg, opts_seen);
         goto cleanup;
     } else if (tok_type == VSH_TK_END) {
         ret = VSH_LINE_STATE_LINE_DONE;
@@ -2274,6 +2368,8 @@ vshCommandStringGetArg(vshControl *ctl, vshCommandParser *parser,
             if (*p == '\0') {
                 if (raise_err)
                     vshError(ctl, "%s", _("dangling \\"));
+                else
+                    *(*res + sz) = '\0';
 
                 return VSH_TK_ERROR;
             }
@@ -2289,6 +2385,8 @@ vshCommandStringGetArg(vshControl *ctl, vshCommandParser *parser,
     if (double_quote) {
         if (raise_err)
             vshError(ctl, "%s", _("missing \""));
+        else
+            *(*res + sz) = '\0';
 
         return VSH_TK_ERROR;
     }
@@ -3014,27 +3112,160 @@ vshReadlineCommandGenerator(const char *text, int state)
 }
 
 static char *
+vshDelegateToCustomCompleter(const vshCmdOptDef *opt,
+                             const char *text, int state)
+{
+    static int list_index;
+    static char **completions = NULL;
+    int len = strlen(text);
+    char* val;
+
+    if (!state) {
+        if (!opt)
+            return NULL;
+
+        if (opt->completer) {
+            list_index = 0;
+            completions = opt->completer(opt->completer_flags);
+        }
+        /* otherwise, we fall back to the logic involving file
+         * completion below */
+    }
+
+    if (!completions) {
+        if (!opt->completer && opt->completer_flags & VSH_COMPLETE_AS_FILE)
+            return rl_filename_completion_function(text, state);
+        else
+            return NULL;
+    }
+
+    while ((val = completions[list_index])) {
+        list_index++;
+
+        if (len && STRNEQLEN(val, text, len)) {
+            /* we need to free this explicitly
+             * since it's not getting sent
+             * to readline (frees values sent
+             * to it) */
+            VIR_FREE(val);
+            continue;
+        }
+
+       return val;
+    }
+
+    VIR_FREE(completions);
+    return NULL;
+}
+
+static char *
 vshReadlineOptionsGenerator(const char *text, int state)
 {
     static int list_index, len;
     static const vshCmdDef *cmd = NULL;
     const char *name;
+    static int substate;
+    static uint32_t opts_seen = 0;
+    static uint32_t opts_need_arg = 0;
+    static const vshCmdOptDef *curr_opt = NULL;
+    static const vshCmdOptDef *last_arg_opt = NULL;
+    static bool waiting_for_flag_arg = false;
+    static bool continue_from_error = false;
+    static char *last_tok = NULL;
+    static bool data_only = false;
+    vshCommandParser parser;
 
     if (!state) {
-        /* determine command name */
-        char *p;
-        char *cmdname;
+        char *tok = NULL;
+        vshLineExtractionState line_state;
+        int data_only_track = 0;
 
-        if (!(p = strchr(rl_line_buffer, ' ')))
-            return NULL;
-
-        cmdname = vshCalloc(NULL, (p - rl_line_buffer) + 1, 1);
-        memcpy(cmdname, rl_line_buffer, p - rl_line_buffer);
-
-        cmd = vshCmddefSearch(cmdname);
-        list_index = 0;
         len = strlen(text);
-        VIR_FREE(cmdname);
+        cmd = NULL;
+        opts_seen = 0;
+        opts_need_arg = 0;
+        curr_opt = NULL;
+        list_index = 0;
+        substate = 0;
+        waiting_for_flag_arg = false;
+        VIR_FREE(last_tok);
+        continue_from_error = false;
+        data_only = false;
+
+        /* reset the parser */
+        memset(&parser, 0, sizeof(vshCommandParser));
+        parser.pos = rl_line_buffer;
+        parser.getNextArg = vshCommandStringGetArg;
+
+        line_state = vshExtractLinePart(NULL, &parser, &opts_seen,
+                                        &opts_need_arg, &tok, &cmd,
+                                        &curr_opt, false, 0);
+
+        while (line_state != VSH_LINE_STATE_LINE_DONE &&
+                line_state != VSH_LINE_STATE_TOK_ERR) {
+
+            /* if we have an opt and a tok, we're in a data
+             * arg or a flag with an arg */
+            if (line_state == VSH_LINE_STATE_IN_PROGRESS &&
+                    curr_opt && tok) {
+                last_arg_opt = curr_opt;
+            } else {
+                last_arg_opt = NULL;
+            }
+
+
+            if (line_state == VSH_LINE_STATE_CMD_DONE) {
+                cmd = NULL;
+                data_only_track = 0;
+            } else if (line_state == VSH_LINE_STATE_DATA_ONLY) {
+                data_only_track++;
+            } else if (data_only_track) {
+                data_only_track++;
+            }
+
+            VIR_FREE(tok);
+
+            line_state = vshExtractLinePart(NULL, &parser, &opts_seen,
+                                            &opts_need_arg, &tok, &cmd,
+                                            &curr_opt, false, 1);
+        }
+
+        if (data_only_track && (data_only_track > 1 || len == 0))
+            data_only = true;
+
+        if (line_state == VSH_LINE_STATE_TOK_ERR) {
+            /* we're here either because of a dangling
+             * backslash or a missing quote */
+            continue_from_error = true;
+            last_tok = tok;
+        } else {
+            VIR_FREE(tok);
+        }
+
+        if (last_arg_opt && len > 0) {
+            if (last_arg_opt->type != VSH_OT_DATA &&
+                    last_arg_opt->type != VSH_OT_ARGV) {
+                if (text[0] == '-' && !text[1]) {
+                    /* this ensures that completion on '-' works properly */
+                    int opt_ind = -1;
+                    for (opt_ind = 0; cmd->opts[opt_ind].name; opt_ind++) {
+                        if (last_arg_opt == &cmd->opts[opt_ind])
+                            break;
+                    }
+                    opts_seen &= ~(1 << opt_ind);
+                    opts_need_arg &= ~(1 << opt_ind);
+                    last_arg_opt = NULL;
+                } else {
+                    curr_opt = last_arg_opt;
+                }
+            }
+        }
+
+        /* if we have an opt that wasn't reset, we're still waiting
+         * for a flag argument (ditto if we still have a last_arg_opt
+         * and we have current text) */
+        if (curr_opt)
+            waiting_for_flag_arg = true;
     }
 
     if (!cmd)
@@ -3043,14 +3274,146 @@ vshReadlineOptionsGenerator(const char *text, int state)
     if (!cmd->opts)
         return NULL;
 
+    if (waiting_for_flag_arg) {
+        char* res;
+        if (continue_from_error)
+            res = vshDelegateToCustomCompleter(curr_opt, last_tok, substate);
+        else
+            res = vshDelegateToCustomCompleter(curr_opt, text, substate);
+
+        substate++;
+        /* if we're in a flag's argument, we don't
+         * want to show other flags */
+
+        if (res && strchr(res, ' ')) {
+            /* quote matches with spaces */
+            char *orig = res;
+            int orig_len = strlen(orig);
+            res = vshMalloc(NULL, orig_len + 3);
+            snprintf(res, orig_len + 3, "\"%s\"", orig);
+            VIR_FREE(orig);
+        }
+
+        if (res && continue_from_error) {
+            char *orig = res;
+            int orig_len = strlen(orig);
+            if (strchr(last_tok, ' ')) {
+                int part_len = strlen(last_tok);
+                char *start_pos = orig + part_len;
+                int new_len;
+
+                if (len == 0)
+                    start_pos++;
+
+                new_len = strlen(start_pos);
+
+                res = vshMalloc(NULL, orig_len - part_len + 1);
+                vshStrncpy(NULL, res, start_pos, new_len, new_len + 1);
+            } else if (res[0] == '"') {
+                /* if we don't have a space, that we're actually
+                 * completing normally so far -- we just need to
+                 * remove the initial quote */
+                res = vshMalloc(NULL, orig_len);
+                vshStrncpy(NULL, res, orig + 1, orig_len - 1, orig_len);
+            }
+            VIR_FREE(orig);
+        }
+
+        return res;
+    }
+
     while ((name = cmd->opts[list_index].name)) {
         const vshCmdOptDef *opt = &cmd->opts[list_index];
+        const bool was_parsed = opts_seen & (1 << list_index);
         char *res;
+
+        if (opt->type == VSH_OT_DATA || opt->type == VSH_OT_ARGV) {
+            bool in_completion = (was_parsed && last_arg_opt == opt &&
+                                    len > 0);
+            if (!in_completion && ffs(opts_need_arg) - 1 != list_index) {
+                list_index++;
+                continue;
+            }
+
+            /* skip positional args when we have the start of a flag */
+            if (len > 0 && text[0] == '-') {
+                list_index++;
+                continue;
+            }
+
+            /* we don't need to ignore args without custom completers,
+             * since vshDelegateToCustomCompleter will do this for us */
+            if (continue_from_error)
+                res = vshDelegateToCustomCompleter(opt, last_tok, substate);
+            else
+                res = vshDelegateToCustomCompleter(opt, text, substate);
+            substate++;
+            if (res) {
+                if (strchr(res, ' ')) {
+                    /* quote matches with spaces */
+                    char *orig = res;
+                    int orig_len = strlen(orig);
+                    res = vshMalloc(NULL, orig_len + 3);
+                    snprintf(res, orig_len + 3, "\"%s\"", orig);
+                    VIR_FREE(orig);
+                }
+
+                if (continue_from_error) {
+                    char *orig = res;
+                    int orig_len = strlen(orig);
+                    if (strchr(last_tok, ' ')) {
+                        int part_len = strlen(last_tok);
+                        char *start_pos = orig + part_len;
+                        int new_len;
+
+                        if (len == 0)
+                            start_pos++;
+
+                        new_len = strlen(start_pos);
+
+                        res = vshMalloc(NULL, orig_len - part_len + 1);
+                        vshStrncpy(NULL, res, start_pos, new_len, new_len + 1);
+                    } else if (res[0] == '"') {
+                        /* if we don't have a space, that we're actually
+                         * completing normally so far -- we just need to
+                         * remove the initial quote */
+                        res = vshMalloc(NULL, orig_len);
+                        vshStrncpy(NULL, res, orig + 1, orig_len - 1, orig_len);
+                    }
+                    VIR_FREE(orig);
+                }
+
+                return res;
+            } else {
+                /* if we're already in the middle of completing
+                 * something with a custom completer, there's no
+                 * need to show the other options */
+                if ((len > 0 || continue_from_error) && text[0] != '-')
+                    return NULL;
+                else {
+                    list_index++;
+                    continue;
+                }
+            }
+        }
 
         list_index++;
 
-        if (opt->type == VSH_OT_DATA || opt->type == VSH_OT_ARGV)
-            /* ignore non --option */
+        /* don't complete flags if we're past a -- */
+        if (data_only)
+            continue;
+
+        /* don't complete flags if we're in the middle of
+         * completing a quoted data string */
+        if (continue_from_error)
+            continue;
+
+        /* ignore flags we've already parsed */
+        if (was_parsed)
+            continue;
+
+        /* skip if we've already started completing a data arg */
+        if (len && text[0] != '-')
             continue;
 
         if (len > 2) {
@@ -3078,6 +3441,10 @@ vshReadlineCompletion(const char *text, int start,
     else
         /* commands options */
         matches = rl_completion_matches(text, vshReadlineOptionsGenerator);
+
+    /* tell the readline that we're ok with having no matches,
+     * so it shouldn't try to use its default completion function */
+    rl_attempted_completion_over = 1;
     return matches;
 }
 
@@ -3096,7 +3463,8 @@ vshReadlineInit(vshControl *ctl)
      */
     rl_readline_name = (char *) "virsh";
 
-    /* Tell the completer that we want a crack first. */
+    /* tell the completer that we want to handle generating
+     * potential matches */
     rl_attempted_completion_function = vshReadlineCompletion;
 
     /* Limit the total size of the history buffer */
@@ -3164,6 +3532,96 @@ vshReadline(vshControl *ctl ATTRIBUTE_UNUSED, const char *prompt)
 {
     return readline(prompt);
 }
+
+
+/*
+ * "complete" command
+ */
+static const vshCmdInfo info_complete[] = {
+    {.name = "help",
+     .data = N_("complete the given command")
+    },
+    {.name = "desc",
+     .data = N_("Complete the given input as if "
+                "readline was doing tab-completion "
+                "in the interactive shell")
+    },
+    {.name = NULL}
+};
+
+static const vshCmdOptDef opts_complete[] = {
+    {.name = "input",
+     .type = VSH_OT_DATA,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("pass in the line to be completed in quotes"),
+    },
+    {.name = "rest",
+     .type = VSH_OT_ARGV,
+     .flags = VSH_OFLAG_REQ,
+     .help = N_("pass in the line to be completed following "
+                " a '--' without quotes")
+    },
+    {.name = NULL}
+};
+
+static bool
+cmdComplete(vshControl *ctl, const vshCmd *cmd)
+{
+    const char *input;
+    const char *full_line;
+    const vshCmdOpt *opt = NULL;
+    virBuffer input_buff = VIR_BUFFER_INITIALIZER;
+    int line_len;
+    const char *text;
+    char **matches;
+    char *match;
+
+    if (vshCommandOptStringReq(ctl, cmd, "input", &input) < 0)
+        return false;
+
+    virBufferAdd(&input_buff, input, -1);
+
+    while ((opt = vshCommandOptArgv(cmd, opt))) {
+        virBufferAddLit(&input_buff, " ");
+        if (opt->data[0])
+            virBufferAdd(&input_buff, opt->data, -1);
+    }
+
+    if (virBufferError(&input_buff)) {
+        vshPrint(ctl, "%s", _("Failed to allocate XML buffer"));
+        return false;
+    }
+
+    full_line = virBufferContentAndReset(&input_buff);
+    line_len = strlen(full_line);
+
+    /* intialize the readline line buffer */
+    rl_extend_line_buffer(line_len);
+    rl_line_buffer = vshStrdup(ctl, full_line);
+
+    text = strrchr(rl_line_buffer, ' ');
+    if (!text)
+        text = rl_line_buffer;
+    else
+        text += 1; // skip the space
+
+    matches = vshReadlineCompletion(text, (int) (text - rl_line_buffer),
+                                    line_len);
+
+    if (matches) {
+        size_t i;
+        for (i = 0; (match = matches[i]); i++) {
+            vshPrint(ctl, "%s\n", match);
+            VIR_FREE(match); /* readline normally frees matches itself */
+        }
+
+        VIR_FREE(matches);
+    }
+
+    VIR_FREE(full_line);
+    return true;
+}
+
 
 #else /* !WITH_READLINE */
 
@@ -3603,10 +4061,24 @@ static const vshCmdDef virshCmds[] = {
      .info = info_cd,
      .flags = VSH_CMD_FLAG_NOCONNECT
     },
+#if WITH_READLINE
+    {.name = "complete",
+     .handler = cmdComplete,
+     .opts = opts_complete,
+     .info = info_complete,
+     .flags = VSH_CMD_FLAG_NOCONNECT,
+    },
+#endif /* WITH_READLINE */
     {.name = "connect",
      .handler = cmdConnect,
      .opts = opts_connect,
      .info = info_connect,
+     .flags = VSH_CMD_FLAG_NOCONNECT
+    },
+    {.name = "fake-command",
+     .handler = cmdFakeCommand,
+     .opts = opts_fake_command,
+     .info = info_fake_command,
      .flags = VSH_CMD_FLAG_NOCONNECT
     },
     {.name = "echo",

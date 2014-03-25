@@ -175,6 +175,11 @@ struct _vshCmdOptDef {
     unsigned int completer_flags;   /* option completer flags */
 };
 
+/* a completer_flag, which, in the absence of a completer
+ * function, tells the completer to use the built-in
+ * readline file completer */
+# define VSH_COMPLETE_AS_FILE (1 << 8)
+
 /*
  * vshCmdOpt - command options
  *
@@ -410,6 +415,13 @@ char *_vshStrdup(vshControl *ctl, const char *s, const char *filename,
 # define calloc use_vshCalloc_instead_of_calloc
 # define realloc use_vshRealloc_instead_of_realloc
 # define strdup use_vshStrdup_instead_of_strdup
+
+# define vshStrncpy(_ctl, _dest, _src, _n, _destsize) \
+    _vshStrncpy(_ctl, _dest, _src, _n, _destsize, __FILE__, __LINE__)
+
+char *_vshStrncpy(vshControl *ctl, char *dest, const char *src, size_t n,
+                  size_t destsize, const char *filename, int line);
+
 
 /* Macros to help dealing with mutually exclusive options. */
 

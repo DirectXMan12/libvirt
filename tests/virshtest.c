@@ -153,6 +153,189 @@ Memory size:         8192000 KiB\n\
   return testCompareOutputLit(exp, NULL, argv);
 }
 
+# if WITH_READLINE
+/* completion tests */
+
+static int testPartialCommandCompletionSing(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete", "li", NULL };
+    const char *exp = "list\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testPartialCommandCompletionMult(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete", "l", NULL };
+    const char *exp = "l\nlxc-enter-namespace\nlist\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testPartialBoolFlagCompletion(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "list --n", NULL };
+    const char *exp = "--n\n--no-autostart\n--name\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testBlankBoolFlagCompletion(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "list --", NULL };
+    const char *exp = "--\n--inactive\n--all\n--transient\n--persistent\n\
+--with-snapshot\n--without-snapshot\n--state-running\n\
+--state-paused\n--state-shutoff\n--state-other\n\
+--autostart\n--no-autostart\n--with-managed-save\n\
+--without-managed-save\n--uuid\n--name\n--table\n\
+--managed-save\n--title\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testNoCompleterDoesntFileComplete(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "attach-disk --serial ", NULL };
+    const char *exp = "\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testFileCompletion(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "fake-command --file ",
+                                 NULL };
+    char *actual = NULL;
+    int res = -1;
+
+    /* this may fail if you have a lot of files in the current
+     * directory.  4096 was not enough, but 4096^2 was on my system */
+    if (virtTestCaptureProgramOutput(argv, &actual, 4096*4096) < 0)
+        goto cleanup;
+
+    /* just check if we return something here */
+    if (actual && strlen(actual))
+        res = 0;
+
+ cleanup:
+    VIR_FREE(actual);
+    return res;
+}
+
+static int testUsedFlagIsntCompletedAgain(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "fake-command --string1 ab --str", NULL };
+    const char *exp = "--string\n--string2\n--string3\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testMultStrArgsCompletion(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "fake-command --string1 ", NULL };
+    const char *exp = "value\nvalue1\nvalue2\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testMultDataArgsCompletion(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "fake-command ab ", NULL };
+    const char *exp = "\n--abool\n\"i e f\"\n\"i g h\"\n--string1\n--string2\
+\n--string3\n--file\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testDataSpaceComplAreQuoted(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "fake-command ab ", NULL };
+    const char *exp = "\n--abool\n\"i e f\"\n\"i g h\"\n--string1\n--string2\
+\n--string3\n--file\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testStrSpaceComplAreQuoted(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "fake-command --string2 ", NULL };
+    const char *exp = "\"value \n\"value a\"\n\"value b\"\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+/* Note: partial completion is a bit funky because readline treats spaces as
+ * "new token", so we only need to complete part of the word.  Also, it ignores
+ * quotes, so if we already have a quote at the beginning of a token, our
+ * completion shouldn't have a quote */
+static int testPartialStrQuoteCompletion(const void *data ATTRIBUTE_UNUSED)
+{
+    int res = 0;
+    const char *const argv1[] = { VIRSH_CUSTOM, "complete",
+                                  "fake-command --string2 \"value ", NULL };
+    const char *exp1 = "\na\"\nb\"\n\n";
+    const char *const argv2[] = { VIRSH_CUSTOM, "complete",
+                                 "fake-command --string2 \"va", NULL };
+    const char *exp2 = "value \nvalue a\"\nvalue b\"\n\n";
+
+    res = testCompareOutputLit(exp1, NULL, argv1);
+    res += testCompareOutputLit(exp2, NULL, argv2);
+
+    return res;
+}
+
+static int testPartialDataQuoteCompletion(const void *data ATTRIBUTE_UNUSED)
+{
+    int res = 0;
+    const char *const argv1[] = { VIRSH_CUSTOM, "complete",
+                                  "fake-command ab \"i ", NULL };
+    const char *exp1 = "\ne f\"\ng h\"\n\n";
+    const char *const argv2[] = { VIRSH_CUSTOM, "complete",
+                                  "fake-command ab \"i e", NULL };
+    const char *exp2 = "e f\"\n\n";
+
+    res = testCompareOutputLit(exp1, NULL, argv1);
+    res += testCompareOutputLit(exp2, NULL, argv2);
+
+    return res;
+}
+
+static int testArgvCompletesRepeatedly(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "echo hi ", NULL };
+
+    const char *exp = "\n--shell\n--xml\n--str\n--hi\n\
+hello\nbonjour\nshalom\n#!\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testRepeatedCompletionRequests(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM,
+                                 "complete 'l'; complete 'li'", NULL };
+    const char *exp = "l\nlxc-enter-namespace\nlist\n\nlist\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testCompletionIgnoresSubcmd(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "list --all; echo h", NULL };
+    const char *exp = "hello\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+static int testCompletionInArgvMode(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "--", "echo", "--shell", "a", "", NULL };
+    const char *exp = "\n--xml\n--str\n--hi\nhello\nbonjour\nshalom\n#!\n\n";
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
+# endif /* WITH_READLINE */
+
+
 static int testCompareDominfoByID(const void *data ATTRIBUTE_UNUSED)
 {
   const char *const argv[] = { VIRSH_CUSTOM, "dominfo", "2", NULL };
@@ -321,6 +504,78 @@ mymain(void)
     if (virtTestRun("virsh domstate (by name)",
                     testCompareDomstateByName, NULL) != 0)
         ret = -1;
+
+# if WITH_READLINE
+    /* test completion */
+    if (virtTestRun("virsh completion (command with only one result)",
+                    testPartialCommandCompletionSing, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (command with multiple results)",
+                    testPartialCommandCompletionMult, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (boolean flag with parital name)",
+                    testPartialBoolFlagCompletion, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (boolean flag with only --)",
+                    testBlankBoolFlagCompletion, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (null completer)",
+                    testNoCompleterDoesntFileComplete, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (file completion)",
+                    testFileCompletion, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (no reusing flags)",
+                    testUsedFlagIsntCompletedAgain, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (multiple string flags)",
+                    testMultStrArgsCompletion, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (multiple data flags)",
+                    testMultDataArgsCompletion, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (repeated argv)",
+                    testArgvCompletesRepeatedly, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (spaces in data completions)",
+                    testDataSpaceComplAreQuoted, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (spaces in flag completions)",
+                    testStrSpaceComplAreQuoted, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (partial quoted data)",
+                    testPartialDataQuoteCompletion, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (partial quoted flag args)",
+                    testPartialStrQuoteCompletion, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (repeated completion requests)",
+                    testRepeatedCompletionRequests, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (completion ignores previous subcmd)",
+                    testCompletionIgnoresSubcmd, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (completion command in argv mode)",
+                    testCompletionInArgvMode, NULL) != 0)
+        ret = -1;
+
+# endif /* WITH_READLINE */
 
     /* It's a bit awkward listing result before argument, but that's a
      * limitation of C99 vararg macros.  */
