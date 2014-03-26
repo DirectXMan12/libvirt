@@ -96,6 +96,16 @@ static char *progname;
 
 static const vshCmdGrp cmdGroups[];
 
+#if WITH_READLINE
+static vshControl *completer_ctl;
+
+vshControl *
+_vshGetCompleterCtl(void)
+{
+    return completer_ctl;
+}
+#endif
+
 /* Bypass header poison */
 #undef strdup
 
@@ -1033,6 +1043,21 @@ VSH_STRING_COMPLETER(NULL, FakeCommandStr2, "value a", "value b");
 VSH_STRING_COMPLETER(NULL, FakeCommandData1, "ab", "cd");
 VSH_STRING_COMPLETER(NULL, FakeCommandData2, "i e f", "i g h");
 
+static char **
+vshCompleteFakeCommandStr3(unsigned int flags)
+{
+    virCheckFlags(0, NULL);
+
+    vshControl *ctl = vshGetCompleterCtl();
+    char *uri = virConnectGetURI(ctl->conn);
+    char **res = vshCalloc(NULL, 2, sizeof(char*));
+
+    res[0] = uri;
+    res[1] = NULL;
+
+    return res;
+}
+
 static const vshCmdOptDef opts_fake_command[] = {
     {.name = "abool",
      .type = VSH_OT_BOOL,
@@ -1060,6 +1085,7 @@ static const vshCmdOptDef opts_fake_command[] = {
     },
     {.name = "string3",
      .type = VSH_OT_STRING,
+     .completer = vshCompleteFakeCommandStr3,
      .help = N_("another string")
     },
     {.name = "file",
@@ -3112,7 +3138,7 @@ vshReadlineCommandGenerator(const char *text, int state)
 }
 
 static char *
-vshDelegateToCustomCompleter(const vshCmdOptDef *opt,
+vshDelegateToCustomCompleter(const vshCmdOptDef *opt, bool reconnect,
                              const char *text, int state)
 {
     static int list_index;
@@ -3125,6 +3151,10 @@ vshDelegateToCustomCompleter(const vshCmdOptDef *opt,
             return NULL;
 
         if (opt->completer) {
+            vshControl *ctl = completer_ctl;
+            if ((!ctl->conn || disconnected) && reconnect)
+                vshReconnect(ctl);
+
             list_index = 0;
             completions = opt->completer(opt->completer_flags);
         }
@@ -3276,10 +3306,13 @@ vshReadlineOptionsGenerator(const char *text, int state)
 
     if (waiting_for_flag_arg) {
         char* res;
+        bool may_connect = !(cmd->flags & VSH_CMD_FLAG_NOCONNECT);
         if (continue_from_error)
-            res = vshDelegateToCustomCompleter(curr_opt, last_tok, substate);
+            res = vshDelegateToCustomCompleter(curr_opt, may_connect,
+                                               last_tok, substate);
         else
-            res = vshDelegateToCustomCompleter(curr_opt, text, substate);
+            res = vshDelegateToCustomCompleter(curr_opt, may_connect,
+                                               text, substate);
 
         substate++;
         /* if we're in a flag's argument, we don't
@@ -3343,10 +3376,14 @@ vshReadlineOptionsGenerator(const char *text, int state)
 
             /* we don't need to ignore args without custom completers,
              * since vshDelegateToCustomCompleter will do this for us */
+            bool may_connect = !(cmd->flags & VSH_CMD_FLAG_NOCONNECT);
             if (continue_from_error)
-                res = vshDelegateToCustomCompleter(opt, last_tok, substate);
+                res = vshDelegateToCustomCompleter(opt, may_connect,
+                                                   last_tok, substate);
             else
-                res = vshDelegateToCustomCompleter(opt, text, substate);
+                res = vshDelegateToCustomCompleter(opt, may_connect,
+                                                   text, substate);
+
             substate++;
             if (res) {
                 if (strchr(res, ' ')) {
@@ -4134,8 +4171,13 @@ int
 main(int argc, char **argv)
 {
     vshControl _ctl, *ctl = &_ctl;
+
     const char *defaultConn;
     bool ret = true;
+
+#if WITH_READLINE
+    completer_ctl = ctl;
+#endif
 
     memset(ctl, 0, sizeof(vshControl));
     ctl->imode = true;          /* default is interactive mode */

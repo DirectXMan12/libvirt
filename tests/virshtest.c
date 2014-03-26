@@ -333,6 +333,15 @@ static int testCompletionInArgvMode(const void *data ATTRIBUTE_UNUSED)
     return testCompareOutputLit(exp, NULL, argv);
 }
 
+static int testCompletionRequiringCtl(const void *data ATTRIBUTE_UNUSED)
+{
+    const char *const argv[] = { VIRSH_CUSTOM, "complete",
+                                 "fake-command --string3 ", NULL };
+    const char *exp = ("test:///home/directxman12/dev/libvirt"
+                       "/tests/../examples/xml/test/testnode.xml\n\n");
+    return testCompareOutputLit(exp, NULL, argv);
+}
+
 # endif /* WITH_READLINE */
 
 
@@ -573,6 +582,10 @@ mymain(void)
 
     if (virtTestRun("virsh completion (completion command in argv mode)",
                     testCompletionInArgvMode, NULL) != 0)
+        ret = -1;
+
+    if (virtTestRun("virsh completion (completer requiring control object)",
+                    testCompletionRequiringCtl, NULL) != 0)
         ret = -1;
 
 # endif /* WITH_READLINE */

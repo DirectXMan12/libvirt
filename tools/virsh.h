@@ -180,6 +180,14 @@ struct _vshCmdOptDef {
  * readline file completer */
 # define VSH_COMPLETE_AS_FILE (1 << 8)
 
+vshControl * _vshGetCompleterCtl(void);
+
+# if WITH_READLINE
+#  define vshGetCompleterCtl() _vshGetCompleterCtl()
+# else
+#  define vshGetCompleterCtl() NULL
+# endif
+
 /*
  * vshCmdOpt - command options
  *
