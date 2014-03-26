@@ -25,6 +25,7 @@
 
 #include <config.h>
 #include "virsh-snapshot.h"
+#include "virsh-completer.h"
 
 #include <assert.h>
 
@@ -125,6 +126,7 @@ static const vshCmdOptDef opts_snapshot_create[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "xmlfile",
@@ -330,6 +332,7 @@ static const vshCmdOptDef opts_snapshot_create_as[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "name",
@@ -526,6 +529,7 @@ static const vshCmdOptDef opts_snapshot_edit[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "snapshotname",
@@ -648,6 +652,7 @@ static const vshCmdOptDef opts_snapshot_current[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "name",
@@ -884,6 +889,7 @@ static const vshCmdOptDef opts_snapshot_info[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "snapshotname",
@@ -1441,6 +1447,7 @@ static const vshCmdOptDef opts_snapshot_list[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "parent",
@@ -1705,6 +1712,7 @@ static const vshCmdOptDef opts_snapshot_dumpxml[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "snapshotname",
@@ -1773,6 +1781,7 @@ static const vshCmdOptDef opts_snapshot_parent[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "snapshotname",
@@ -1841,6 +1850,7 @@ static const vshCmdOptDef opts_snapshot_revert[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "snapshotname",
@@ -1934,6 +1944,7 @@ static const vshCmdOptDef opts_snapshot_delete[] = {
     {.name = "domain",
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
+     .completer = vshCompleteDomain,
      .help = N_("domain name, id or uuid")
     },
     {.name = "snapshotname",

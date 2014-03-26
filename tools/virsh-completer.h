@@ -70,4 +70,16 @@
 
 char ** vshVarArgsToStringList(vshControl *ctl, unsigned int count, ...);
 
+struct vshDomainList {
+    virDomainPtr *domains;
+    size_t ndomains;
+};
+typedef struct vshDomainList *vshDomainListPtr;
+
+void vshDomainListFree(vshDomainListPtr domlist);
+
+vshDomainListPtr vshDomainListCollect(vshControl *ctl, unsigned int flags);
+
+char ** vshCompleteDomain(unsigned int flags);
+
 #endif /* VIRSH_COMPLETER_H */

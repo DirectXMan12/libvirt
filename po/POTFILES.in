@@ -226,6 +226,7 @@ src/xenxs/xen_xm.c
 tools/libvirt-guests.sh.in
 tools/virsh.c
 tools/virsh.h
+tools/virsh-completer.c
 tools/virsh-console.c
 tools/virsh-domain-monitor.c
 tools/virsh-domain.c

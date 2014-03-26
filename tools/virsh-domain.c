@@ -25,6 +25,7 @@
 
 #include <config.h>
 #include "virsh-domain.h"
+#include "virsh-completer.h"
 
 #include <fcntl.h>
 #include <poll.h>
@@ -161,6 +162,7 @@ static const vshCmdInfo info_attach_device[] = {
 
 static const vshCmdOptDef opts_attach_device[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -263,6 +265,7 @@ static const vshCmdInfo info_attach_disk[] = {
 
 static const vshCmdOptDef opts_attach_disk[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -703,6 +706,7 @@ static const vshCmdInfo info_attach_interface[] = {
 
 static const vshCmdOptDef opts_attach_interface[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -960,6 +964,7 @@ static const vshCmdInfo info_autostart[] = {
 
 static const vshCmdOptDef opts_autostart[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -1016,6 +1021,7 @@ static const vshCmdInfo info_blkdeviotune[] = {
 
 static const vshCmdOptDef opts_blkdeviotune[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -1240,6 +1246,7 @@ static const vshCmdInfo info_blkiotune[] = {
 
 static const vshCmdOptDef opts_blkiotune[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -1567,6 +1574,7 @@ static const vshCmdInfo info_block_commit[] = {
 
 static const vshCmdOptDef opts_block_commit[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -1735,6 +1743,7 @@ static const vshCmdInfo info_block_copy[] = {
 
 static const vshCmdOptDef opts_block_copy[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -1930,6 +1939,7 @@ static const vshCmdInfo info_block_job[] = {
 
 static const vshCmdOptDef opts_block_job[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -2031,6 +2041,7 @@ static const vshCmdInfo info_block_pull[] = {
 
 static const vshCmdOptDef opts_block_pull[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -2186,6 +2197,7 @@ static const vshCmdInfo info_block_resize[] = {
 
 static const vshCmdOptDef opts_block_resize[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -2256,6 +2268,7 @@ static const vshCmdInfo info_console[] = {
 
 static const vshCmdOptDef opts_console[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -2353,6 +2366,7 @@ static const vshCmdInfo info_domif_setlink[] = {
 
 static const vshCmdOptDef opts_domif_setlink[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -2540,6 +2554,7 @@ static const vshCmdInfo info_domiftune[] = {
 
 static const vshCmdOptDef opts_domiftune[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -2727,6 +2742,7 @@ static const vshCmdInfo info_suspend[] = {
 
 static const vshCmdOptDef opts_suspend[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -2773,6 +2789,7 @@ static const vshCmdInfo info_dom_pm_suspend[] = {
 
 static const vshCmdOptDef opts_dom_pm_suspend[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -2857,6 +2874,7 @@ static const vshCmdInfo info_dom_pm_wakeup[] = {
 
 static const vshCmdOptDef opts_dom_pm_wakeup[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -2906,6 +2924,7 @@ static const vshCmdInfo info_undefine[] = {
 
 static const vshCmdOptDef opts_undefine[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name or uuid")
@@ -3299,6 +3318,7 @@ static const vshCmdInfo info_start[] = {
 
 static const vshCmdOptDef opts_start[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("name of the inactive domain")
@@ -3482,6 +3502,7 @@ static const vshCmdOptDef opts_save[] = {
      .help = N_("avoid file system cache when saving")
     },
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -3951,6 +3972,7 @@ static const vshCmdOptDef opts_managedsave[] = {
      .help = N_("avoid file system cache when saving")
     },
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -4071,6 +4093,7 @@ static const vshCmdInfo info_managedsaveremove[] = {
 
 static const vshCmdOptDef opts_managedsaveremove[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -4130,6 +4153,7 @@ static const vshCmdInfo info_schedinfo[] = {
 
 static const vshCmdOptDef opts_schedinfo[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -4473,6 +4497,7 @@ static const vshCmdOptDef opts_dump[] = {
      .help = N_("reset the domain after core dump")
     },
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -4640,6 +4665,7 @@ static const vshCmdInfo info_screenshot[] = {
 
 static const vshCmdOptDef opts_screenshot[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -4788,6 +4814,7 @@ static const vshCmdInfo info_resume[] = {
 
 static const vshCmdOptDef opts_resume[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -4831,6 +4858,7 @@ static const vshCmdInfo info_shutdown[] = {
 
 static const vshCmdOptDef opts_shutdown[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -4917,6 +4945,7 @@ static const vshCmdInfo info_reboot[] = {
 
 static const vshCmdOptDef opts_reboot[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -4998,6 +5027,7 @@ static const vshCmdInfo info_reset[] = {
 
 static const vshCmdOptDef opts_reset[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -5041,6 +5071,7 @@ static const vshCmdInfo info_domjobinfo[] = {
 
 static const vshCmdOptDef opts_domjobinfo[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -5263,6 +5294,7 @@ static const vshCmdInfo info_domjobabort[] = {
 
 static const vshCmdOptDef opts_domjobabort[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -5301,6 +5333,7 @@ static const vshCmdInfo info_vcpucount[] = {
 
 static const vshCmdOptDef opts_vcpucount[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -5512,6 +5545,7 @@ static const vshCmdInfo info_vcpuinfo[] = {
 
 static const vshCmdOptDef opts_vcpuinfo[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -5621,6 +5655,7 @@ static const vshCmdInfo info_vcpupin[] = {
 
 static const vshCmdOptDef opts_vcpupin[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -5908,6 +5943,7 @@ static const vshCmdInfo info_emulatorpin[] = {
 
 static const vshCmdOptDef opts_emulatorpin[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -6027,6 +6063,7 @@ static const vshCmdInfo info_setvcpus[] = {
 
 static const vshCmdOptDef opts_setvcpus[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -6348,6 +6385,7 @@ static const vshCmdInfo info_cpu_stats[] = {
 
 static const vshCmdOptDef opts_cpu_stats[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -6682,6 +6720,7 @@ static const vshCmdInfo info_destroy[] = {
 
 static const vshCmdOptDef opts_destroy[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -6739,6 +6778,7 @@ static const vshCmdInfo info_desc[] = {
 
 static const vshCmdOptDef opts_desc[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -6911,6 +6951,7 @@ static const vshCmdInfo info_metadata[] = {
 
 static const vshCmdOptDef opts_metadata[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -7068,6 +7109,7 @@ static const vshCmdInfo info_inject_nmi[] = {
 
 static const vshCmdOptDef opts_inject_nmi[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -7106,6 +7148,7 @@ static const vshCmdInfo info_send_key[] = {
 
 static const vshCmdOptDef opts_send_key[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -7208,6 +7251,7 @@ static const vshCmdInfo info_send_process_signal[] = {
 
 static const vshCmdOptDef opts_send_process_signal[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -7323,6 +7367,7 @@ static const vshCmdInfo info_setmem[] = {
 
 static const vshCmdOptDef opts_setmem[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -7420,6 +7465,7 @@ static const vshCmdInfo info_setmaxmem[] = {
 
 static const vshCmdOptDef opts_setmaxmem[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -7522,6 +7568,7 @@ static const vshCmdInfo info_memtune[] = {
 
 static const vshCmdOptDef opts_memtune[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -7721,6 +7768,7 @@ static const vshCmdInfo info_numatune[] = {
 
 static const vshCmdOptDef opts_numatune[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -7868,6 +7916,7 @@ static const vshCmdInfo info_qemu_monitor_command[] = {
 
 static const vshCmdOptDef opts_qemu_monitor_command[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -8160,6 +8209,7 @@ static const vshCmdInfo info_qemu_agent_command[] = {
 
 static const vshCmdOptDef opts_qemu_agent_command[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -8289,6 +8339,7 @@ static const vshCmdInfo info_lxc_enter_namespace[] = {
 
 static const vshCmdOptDef opts_lxc_enter_namespace[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -8431,6 +8482,7 @@ static const vshCmdInfo info_dumpxml[] = {
 
 static const vshCmdOptDef opts_dumpxml[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -8617,6 +8669,7 @@ static const vshCmdInfo info_domname[] = {
 
 static const vshCmdOptDef opts_domname[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain id or uuid")
@@ -8653,6 +8706,7 @@ static const vshCmdInfo info_domid[] = {
 
 static const vshCmdOptDef opts_domid[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name or uuid")
@@ -8694,6 +8748,7 @@ static const vshCmdInfo info_domuuid[] = {
 
 static const vshCmdOptDef opts_domuuid[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain id or name")
@@ -8803,6 +8858,7 @@ static const vshCmdOptDef opts_migrate[] = {
      .help = N_("abort on soft errors during migration")
     },
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9073,6 +9129,7 @@ static const vshCmdInfo info_migrate_setmaxdowntime[] = {
 
 static const vshCmdOptDef opts_migrate_setmaxdowntime[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9127,6 +9184,7 @@ static const vshCmdInfo info_migrate_compcache[] = {
 
 static const vshCmdOptDef opts_migrate_compcache[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9189,6 +9247,7 @@ static const vshCmdInfo info_migrate_setspeed[] = {
 
 static const vshCmdOptDef opts_migrate_setspeed[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9241,6 +9300,7 @@ static const vshCmdInfo info_migrate_getspeed[] = {
 
 static const vshCmdOptDef opts_migrate_getspeed[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9285,6 +9345,7 @@ static const vshCmdInfo info_domdisplay[] = {
 
 static const vshCmdOptDef opts_domdisplay[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9472,6 +9533,7 @@ static const vshCmdInfo info_vncdisplay[] = {
 
 static const vshCmdOptDef opts_vncdisplay[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9545,6 +9607,7 @@ static const vshCmdInfo info_ttyconsole[] = {
 
 static const vshCmdOptDef opts_ttyconsole[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9605,6 +9668,7 @@ static const vshCmdInfo info_domhostname[] = {
 
 static const vshCmdOptDef opts_domhostname[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9768,6 +9832,7 @@ static const vshCmdInfo info_detach_device[] = {
 
 static const vshCmdOptDef opts_detach_device[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9869,6 +9934,7 @@ static const vshCmdInfo info_update_device[] = {
 
 static const vshCmdOptDef opts_update_device[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -9971,6 +10037,7 @@ static const vshCmdInfo info_detach_interface[] = {
 
 static const vshCmdOptDef opts_detach_interface[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -10341,6 +10408,7 @@ static const vshCmdInfo info_detach_disk[] = {
 
 static const vshCmdOptDef opts_detach_disk[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -10456,6 +10524,7 @@ static const vshCmdInfo info_edit[] = {
 
 static const vshCmdOptDef opts_edit[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -11041,6 +11110,7 @@ static const vshCmdInfo info_event[] = {
 
 static const vshCmdOptDef opts_event[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .help = N_("filter by domain name, id, or uuid")
     },
@@ -11193,6 +11263,7 @@ static const vshCmdInfo info_change_media[] = {
 
 static const vshCmdOptDef opts_change_media[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
@@ -11344,6 +11415,7 @@ static const vshCmdInfo info_domfstrim[] = {
 
 static const vshCmdOptDef opts_domfstrim[] = {
     {.name = "domain",
+     .completer = vshCompleteDomain,
      .type = VSH_OT_DATA,
      .flags = VSH_OFLAG_REQ,
      .help = N_("domain name, id or uuid")
